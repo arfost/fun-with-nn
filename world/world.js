@@ -17,9 +17,9 @@ module.exports = class {
         }
     }
 
-    createNewCritter() {
+    createNewCritter(pos) {
         let color = ['red', 'blue', 'black', 'yellow'][Math.floor(Math.random()*4)]
-        this.critterList.push(new Critter(color, { x: alea(500), y: alea(500) }))
+        this.critterList.push(new Critter(color, pos))
     }
 }
 

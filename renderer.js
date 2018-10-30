@@ -36,6 +36,7 @@ animate();
 
 
 // click handler to add random rects
-window.addEventListener('click', function () {
-    world.createNewCritter();
+window.addEventListener('click', e => {
+    console.log(e)
+    world.createNewCritter({x:e.x, y:e.y});
 });
