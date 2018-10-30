@@ -20,12 +20,24 @@ function animate() {
     // draw everything
     world.drawCritters.forEach(o => {
         ctx.fillStyle = o.color;
+        if(o.pos.x < 0){
+            o.pos.x = cvWidth
+        }
+        if (o.pos.x > cvWidth){
+            o.pos.x = 0
+        }
+        if(o.pos.y < 0){
+            o.pos.y = cvHeight
+        }
+        if (o.pos.y > cvHeight){
+            o.pos.y = 0
+        }
         o.skin.forEach((row, rowIdx)=>{
             row.forEach((point, pointIdx)=>{
                 if(point){
-                    let xStart = o.pos.x - ((pointIdx * 5))
-                    let yStart = o.pos.y - ((rowIdx * 5))
-                    ctx.fillRect(xStart, yStart, 5, 5);
+                    let xStart = o.pos.x - ((pointIdx * o.size))
+                    let yStart = o.pos.y - ((rowIdx * o.size))
+                    ctx.fillRect(xStart, yStart, o.size, o.size);
                 }
             })
         })

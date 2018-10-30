@@ -13,50 +13,59 @@ module.exports = class {
 
     runWorld() {
         for (let critter of this.critterList) {
-            critter.run(this.critterList)
+            critter.run(this)
         }
+    }
+
+    getNearbyCritters(pos, range){
+        return this.critterList.filter(critter=>{
+            let isOkx = critter.pos.x > pos.x - range && critter.pos.x < pos.x + range
+            let isOky = critter.pos.y > pos.y - range && critter.pos.y < pos.y + range
+            return isOkx && isOky
+        })
     }
 
     createNewCritter(pos) {
         let color = ['red', 'blue', 'black', 'yellow'][Math.floor(Math.random()*4)]
-        this.critterList.push(new Critter(color, pos))
+        this.critterList.push(new Critter(color, pos, Math.floor(Math.random()*3) +2))
     }
 }
 
 class Critter {
-    constructor(color, pos) {
+    constructor(color, pos, size) {
         this.states = [
             {
                 skin: returnNewSkin(),
                 action: function(critter) {
                     console.log(this)
                     critter.pos[this.internal[0]] = critter.pos[this.internal[0]]+ this.internal[1]
-                    return (Math.random() > 0.8)
                 },
-                internal: ['x', 1]
+                internal: [alea(2)=== 1 ? 'x': 'y', alea(2)===1?-1:1]
             },
             {
                 skin: returnNewSkin(),
-                action: () => {
-                    return (Math.random() > 0.2)
-                }
+                action: () => {}
             }
         ]
         this.color = color;
         this.state = 1;
-        this.pos = pos
+        this.pos = pos;
+        this.size = size;
     }
 
     get drawDatas(){
         return {
             pos:this.pos,
             skin:this.states[this.state].skin,
-            color:this.color
+            color:this.color,
+            size:this.size
         }
     }
 
-    run() {
-        this.state = Number(this.states[this.state].action(this))
+    run(world) {
+        let nc = world.getNearbyCritters(this.pos, 200);
+        this.states[this.state].action(this)
+        this.state = Number(nc.length === 0)
     }
 }
 
