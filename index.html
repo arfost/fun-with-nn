@@ -1,15 +1,21 @@
 <!DOCTYPE html>
 <html>
-  <head>
+
+<head>
     <meta charset="UTF-8">
     <title>Hello World!</title>
-  </head>
-  <body>  
+</head>
+
+<body>
     <canvas id='cv' width=1200 height=1200 style="border: 3px solid black"></canvas>
+    <div>
+        <p>gravels : <span id="gravels">0</span></p>
+        <p>ants : <span id="ants">0</span></p>
+    </div>
     <script>
-      // You can also require other files to run in this process
-      require('./renderer.js')
-      
+        // You can also require other files to run in this process
+        require('./renderer.js')
     </script>
-  </body>
+</body>
+
 </html>
