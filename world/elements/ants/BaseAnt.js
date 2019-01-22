@@ -1,20 +1,26 @@
 import { Entity } from '../base/Entity.js'
 import { alea } from '../../../helpers/vrac.js'
+import { Food } from '../worldObjects/Food.js';
 
 export class Ant extends Entity {
-    constructor(pos) {
+    constructor(pos, nest) {
         super(pos);
-        this.direction = alea(0, 3);
+        this.nest = nest;
+        this.orientation = alea(0, 360);
         this.mentalState = {
             preferedDirection: alea(0, 1) ? -1 : 1,
-            lastPheromone: 10,
+            lastPheromoneMax: 10,
             perception: 10,
             pheromoneWanderValue: 10,
+            pheromoneWanderStrength: 500,
             pheromoneFoodValue: 20,
             energyMax: 2000,
             resilience: 500,
+            curiosity: 10,
+            speed: 1
         }
         this.mentalState.energy = this.mentalState.energyMax;
+        this.mentalState.lastPheromone = this.mentalState.lastPheromoneMax;
         this.skinBase = [
             [0, 0, 0, 1, 0, 0, 1, 0, 0, 0],
             [0, 0, 0, 0, 1, 1, 0, 0, 0, 0],
@@ -28,13 +34,8 @@ export class Ant extends Entity {
             [0, 0, 0, 0, 1, 1, 0, 0, 0, 0]
         ]
     }
-
-    get skin() {
-        let skin = this.skinBase;
-        for (let i = 0; i < this.direction; i++) {
-            skin = this.rotate(skin);
-        }
-        return skin;
+    get infos() {
+        return this.mentalState;
     }
 
     get type() {
@@ -42,22 +43,8 @@ export class Ant extends Entity {
     }
 
     forward() {
-
-        switch (this.direction) {
-            case 0:
-                this.pos.y--;
-                break;
-            case 1:
-                this.pos.x++;
-                break;
-            case 2:
-                this.pos.y++;
-                break;
-            case 3:
-                this.pos.x--;
-                break;
-        }
-
+        this.pos.x -= this.mentalState.speed * Math.sin(this.orientation * Math.PI / 180);
+        this.pos.y += this.mentalState.speed * Math.cos(this.orientation * Math.PI / 180);
     }
 
     getFrontOffsetPerceptionPosition() {
@@ -67,33 +54,30 @@ export class Ant extends Entity {
             range: this.mentalState.perception * this.size
         }
         let offset = this.mentalState.perception * this.size;
-        switch (this.direction) {
-            case 0:
-                frontOffSetPosition.y -= offset;
-                break;
-            case 1:
-                frontOffSetPosition.x += offset;
-                break;
-            case 2:
-                frontOffSetPosition.y += offset;
-                break;
-            case 3:
-                frontOffSetPosition.x -= offset;
-                break;
+
+        frontOffSetPosition.x -= offset * Math.sin(this.orientation * Math.PI / 180);
+        frontOffSetPosition.y += offset * Math.cos(this.orientation * Math.PI / 180);
+        return frontOffSetPosition;
+    }
+
+    getCloseOffsetPerceptionPosition() {
+        let frontOffSetPosition = {
+            x: this.pos.x,
+            y: this.pos.y,
+            range: this.mentalState.perception * this.size
         }
+        let offset = this.mentalState.perception / 2 * this.size;
+
+        frontOffSetPosition.x -= offset * Math.sin(this.orientation * Math.PI / 180);
+        frontOffSetPosition.y += offset * Math.cos(this.orientation * Math.PI / 180);
         return frontOffSetPosition;
     }
 
     changeDirection() {
-        console.log('change', this.direction)
-        this.direction += this.mentalState.preferedDirection;
-        if (this.direction > 3) {
-            this.direction = 0;
+        this.orientation += this.mentalState.preferedDirection * 5;
+        if (this.orientation > 360) {
+            this.orientation = 0;
         }
-        if (this.direction < 0) {
-            this.direction = 3;
-        }
-        console.log('change fin', this.direction)
     }
 
     rotate(matrix) {
@@ -105,47 +89,104 @@ export class Ant extends Entity {
         return result;
     };
 
+    postRun(world) {
+        if (this.mentalState.energy < 0) {
+            world.replaceInObjectList(this, new Food(this.pos, 20));
+        }
+        this.mentalState.energy -= 1;
+    }
+
     get states() {
         return [{
-            action: (ant, world) => {
+                action: (ant, world) => {
 
-                let frontOffSetPosition = ant.getFrontOffsetPerceptionPosition();
+                    let frontOffSetPosition = ant.getFrontOffsetPerceptionPosition();
 
-                let isFront = world.getNearbyObjects(frontOffSetPosition);
-                console.log('coucou', alea(1, 200), ant.mentalState.energy)
-                if (isFront.filter(obj => obj.type === 'gravel').length > 0 || alea(1, ant.mentalState.energyMax - ant.mentalState.resilience) > ant.mentalState.energy) {
-                    console.log('coucou gravel')
-                    ant.changeDirection();
-                } else {
-                    ant.forward();
+                    let isFront = world.getNearbyObjects(frontOffSetPosition);
+                    if (isFront.filter(obj => obj.type === 'gravel').length > 0) {
+                        ant.changeDirection();
+                    } else if (alea(1, 100) < ant.mentalState.curiosity) {
+                        ant.changeDirection();
+                    } else {
+                        ant.forward();
+                    }
+                    ant.mentalState.lastPheromone--;
+                    if (ant.mentalState.lastPheromone < 0) {
+                        ant.mentalState.lastPheromone = ant.mentalState.lastPheromoneMax;
+                        ant.mentalState.energy -= 5;
+                        let pheromone = new Pheromone({ x: ant.pos.x, y: ant.pos.y }, ant.mentalState.pheromoneWanderValue, ant.mentalState.pheromoneWanderStrength);
+                        world.pushToObjectList(pheromone)
+                    }
+
+                    if (ant.mentalState.energy < ant.mentalState.resilience) {
+                        return 1;
+                    }
+                    return -1;
                 }
-                ant.mentalState.lastPheromone--;
-                if (ant.mentalState.lastPheromone < 0) {
-                    ant.mentalState.energy -= 1;
-                    let pheromone = new Pheromone({ x: ant.pos.x, y: ant.pos.y }, ant.mentalState.pheromoneWanderValue);
-                    world.pushToObjectList(pheromone)
+            },
+            {
+                foundTrail: false,
+                action: (ant, world) => {
+                    ant.colorValue = 'red'
+                    let frontOffSetPosition = ant.getFrontOffsetPerceptionPosition();
+
+                    let isFront = world.getNearbyObjects(frontOffSetPosition);
+                    if (isFront.filter(obj => obj.type === 'gravel').length > 0) {
+                        ant.changeDirection();
+                    } else if (isFront.filter(obj => obj.type === 'pheromone').length > 0) {
+                        this.foundTrail = true;
+                        ant.forward();
+                    } else if (this.foundTrail) {
+                        ant.changeDirection();
+                    } else if (alea(1, 100) < ant.mentalState.curiosity) {
+                        ant.changeDirection();
+                    } else {
+                        ant.forward();
+                    }
+
+                    return -1;
                 }
-                return -1;
             }
-        }]
+        ]
     }
 }
 
 class Pheromone extends Entity {
-    constructor(pos, value) {
+    constructor(pos, value, maxDecay) {
         super(pos);
         this.value = value;
         this.decay = 0;
+        this.maxDecay = maxDecay;
+        this.colorValue = "rgba(255, 0, 0, 1)"
+        this.skinBase = [
+            [0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+            [0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+            [0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+            [0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+            [0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+            [0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+            [0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+            [0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+            [0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+            [0, 1, 0, 1, 0, 1, 0, 1, 0, 1]
+        ]
     }
 
     get type() {
         return 'pheromone'
     }
 
+    postRun(world) {
+        if (this.decay > this.maxDecay) {
+            world.removeFromObjectList(this);
+        }
+        this.colorValue = `rgba(255, 0, 0, ${1-this.decay / this.maxDecay})`
+    }
+
     get states() {
         return [{
-            action: (entity) => {
-                entity.decay--;
+            action: (entity, world) => {
+                entity.decay++;
                 return -1
             }
         }]

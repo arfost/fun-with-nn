@@ -4,13 +4,44 @@
 <head>
     <meta charset="UTF-8">
     <title>Hello World!</title>
+    <style>
+        .interface {
+            display: flex;
+            align-item: center;
+        }
+        
+        .buttons {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-item: center;
+        }
+        
+        .infos {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-item: center;
+        }
+    </style>
 </head>
 
 <body>
     <canvas id='cv' width=1200 height=1200 style="border: 3px solid black"></canvas>
-    <div>
-        <p>gravels : <span id="gravels">0</span></p>
-        <p>ants : <span id="ants">0</span></p>
+    <div class=interface>
+        <div class="infos" id="infos">
+
+        </div>
+        <div class="buttons">
+            <button id="addGravel">add gravel</button>
+            <button id="addFood">add food</button>
+            <button id="addAnt">add ant</button>
+            <button id="addNestEntrance">add nest entrance</button>
+        </div>
+        <div class="tips" id="tips">
+            <p id="contextualTips"></p>
+            <p>right click on element to select and see infos</p>
+        </div>
     </div>
     <script>
         // You can also require other files to run in this process

@@ -1,5 +1,6 @@
 import { Ant } from './elements/ants/BaseAnt.js'
 import { Gravel } from './elements/worldObjects/Gravel.js'
+import { Food } from './elements/worldObjects/Food.js'
 import { NestEntrance } from './elements/worldObjects/NestEntrance.js'
 
 export default class {
@@ -30,32 +31,48 @@ export default class {
         this.objectList.push(object);
     }
 
+    removeFromObjectList(object) {
+        this.sortedObjects[object.type] = this.sortedObjects[object.type].filter(obj => obj !== object);
+        this.objectList = this.objectList.filter(obj => obj !== object);
+    }
+    replaceInObjectList(object, newObject) {
+        this.removeFromObjectList(object);
+        this.pushToObjectList(newObject);
+    }
+
     runWorld() {
         for (let object of this.objectList) {
             object.run(this)
         }
     }
 
-    getNearbyObjects(pos) {
+    getNearbyObjects(pos, all = true) {
         return this.objectList.filter(object => {
             let isOkx = object.pos.x > pos.x - pos.range && object.pos.x < pos.x + pos.range
-            let isOky = object.pos.y > pos.y - pos.range && object.pos.y < pos.y + pos.range
-            return isOkx && isOky
+            let isOky = object.pos.y > pos.y - pos.range && object.pos.y < pos.y + pos.range;
+            let isDrawable = object.drawDatas.skin;
+            return isOkx && isOky && (isDrawable || all)
         })
     }
 
-    createNewAnt(pos) {
-        if (this.getObjectNumberByType('nestEntrance') === 0) {
-            this.pushToObjectList(new NestEntrance(pos))
-        } else {
-            this.pushToObjectList(new Ant({
-                x: this.sortedObjects['nestEntrance'][0].pos.x,
-                y: this.sortedObjects['nestEntrance'][0].pos.y
-            }))
-        }
-
+    createNewNestEntrance(pos) {
+        this.pushToObjectList(new NestEntrance(pos));
     }
+
+    createNewAnt(nest) {
+        let ant = new Ant({
+            x: nest.pos.x,
+            y: nest.pos.y
+        }, nest);
+        this.pushToObjectList(ant);
+        nest.addAnt(ant);
+    }
+
     createNewGravel(pos) {
         this.pushToObjectList(new Gravel(pos))
+    }
+
+    createNewFood(pos) {
+        this.pushToObjectList(new Food(pos))
     }
 }

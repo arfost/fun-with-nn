@@ -1,14 +1,19 @@
 export class Entity {
     constructor(pos) {
-
+        this.orientation = 0;
         this.state = 0;
         this.pos = pos;
         this.size = 1;
-        this.skinBase = false
+        this.skinBase = false;
+        this.colorValue = 'black';
     }
 
     get type() {
         throw new Error('to override in child')
+    }
+
+    get infos() {
+        return [];
     }
 
     get states() {
@@ -18,7 +23,11 @@ export class Entity {
     }
 
     get color() {
-        return 'black'
+        return this.colorValue;
+    }
+
+    get formatedInfos() {
+        return Object.entries(this.infos).map(([key, value]) => ({ key, value }));
     }
 
     get drawDatas() {
@@ -27,7 +36,8 @@ export class Entity {
             skin: this.skin,
             color: this.color,
             size: this.size,
-            type: this.type
+            type: this.type,
+            orientation: this.orientation
         }
     }
 
@@ -35,8 +45,11 @@ export class Entity {
         return this.skinBase;
     }
 
+    postRun() {}
+
     run(world) {
         let newState = this.states[this.state].action(this, world);
         this.state = newState !== -1 ? newState : this.state;
+        this.postRun(world)
     }
 }
