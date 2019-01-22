@@ -1,25 +1,27 @@
 {
-  "name": "electron-quick-start",
-  "version": "1.0.0",
-  "description": "A minimal Electron application",
-  "main": "main.js",
-  "scripts": {
-    "start": "electron ."
-  },
-  "repository": "https://github.com/electron/electron-quick-start",
-  "keywords": [
-    "Electron",
-    "quick",
-    "start",
-    "tutorial",
-    "demo"
-  ],
-  "author": "GitHub",
-  "license": "CC0-1.0",
-  "devDependencies": {
-    "electron": "^3.0.4"
-  },
-  "dependencies": {
-    "esm": "^3.1.1"
-  }
+    "name": "fun-with-nn-ant-edition",
+    "version": "0.6.0",
+    "description": "some test of ias with simulated ants, in an electron app",
+    "main": "main.js",
+    "scripts": {
+        "start": "electron .",
+        "build": "electron-packager ."
+    },
+    "repository": "https://github.com/arfost/fun-with-nn/tree/ant_life_test",
+    "keywords": [
+        "Electron",
+        "ant",
+        "ia",
+        "test",
+        "demo"
+    ],
+    "author": "arfost",
+    "license": "CC0-1.0",
+    "devDependencies": {
+        "electron": "^3.0.4",
+        "electron-packager": "^13.0.1"
+    },
+    "dependencies": {
+        "esm": "^3.1.1"
+    }
 }
