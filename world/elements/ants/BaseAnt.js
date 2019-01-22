@@ -8,19 +8,19 @@ export class Ant extends Entity {
         this.nest = nest;
         this.orientation = alea(0, 360);
         this.mentalState = {
-            preferedDirection: alea(0, 1) ? -1 : 1,
             lastPheromoneMax: 10,
             perception: 10,
             pheromoneWanderValue: 10,
-            pheromoneWanderStrength: 500,
+            pheromoneWanderStrength: 5000,
             pheromoneFoodValue: 20,
             energyMax: 2000,
-            resilience: 500,
-            curiosity: 10,
+            resilience: 1500,
+            curiosityMax: 100,
             speed: 1
         }
         this.mentalState.energy = this.mentalState.energyMax;
         this.mentalState.lastPheromone = this.mentalState.lastPheromoneMax;
+        this.mentalState.curiosity = this.mentalState.curiosityMax;
         this.skinBase = [
             [0, 0, 0, 1, 0, 0, 1, 0, 0, 0],
             [0, 0, 0, 0, 1, 1, 0, 0, 0, 0],
@@ -73,8 +73,8 @@ export class Ant extends Entity {
         return frontOffSetPosition;
     }
 
-    changeDirection() {
-        this.orientation += this.mentalState.preferedDirection * 5;
+    changeDirection(preferedDirection = alea(0, 1) ? -1 : 1, preferedStep = alea(1, 3)) {
+        this.orientation += preferedDirection * 5 * preferedStep;
         if (this.orientation > 360) {
             this.orientation = 0;
         }
@@ -94,6 +94,8 @@ export class Ant extends Entity {
             world.replaceInObjectList(this, new Food(this.pos, 20));
         }
         this.mentalState.energy -= 1;
+        this.mentalState.curiosity--;
+        console.log(this.mentalState.curiosity, this.mentalState.curiosityMax)
     }
 
     get states() {
@@ -105,10 +107,13 @@ export class Ant extends Entity {
                     let isFront = world.getNearbyObjects(frontOffSetPosition);
                     if (isFront.filter(obj => obj.type === 'gravel').length > 0) {
                         ant.changeDirection();
-                    } else if (alea(1, 100) < ant.mentalState.curiosity) {
+                    } else if (alea(1, ant.mentalState.curiosityMax / 2) > ant.mentalState.curiosity) {
+                        console.log('curio', ant.mentalState.curiosity, ant.mentalState.curiosityMax)
                         ant.changeDirection();
+                        ant.mentalState.curiosity = ant.mentalState.curiosityMax;
                     } else {
                         ant.forward();
+                        this.mentalState.curiosity--;
                     }
                     ant.mentalState.lastPheromone--;
                     if (ant.mentalState.lastPheromone < 0) {
@@ -127,21 +132,26 @@ export class Ant extends Entity {
             {
                 foundTrail: false,
                 action: (ant, world) => {
-                    ant.colorValue = 'red'
+                    ant.colorValue = 'grey'
                     let frontOffSetPosition = ant.getFrontOffsetPerceptionPosition();
 
                     let isFront = world.getNearbyObjects(frontOffSetPosition);
                     if (isFront.filter(obj => obj.type === 'gravel').length > 0) {
                         ant.changeDirection();
+                    } else if (isFront.filter(obj => obj.type === 'nestEntrance').length > 0) {
+                        isFront.filter(obj => obj.type === 'nestEntrance')[0].enter(ant, world);
                     } else if (isFront.filter(obj => obj.type === 'pheromone').length > 0) {
                         this.foundTrail = true;
                         ant.forward();
                     } else if (this.foundTrail) {
                         ant.changeDirection();
-                    } else if (alea(1, 100) < ant.mentalState.curiosity) {
-                        ant.changeDirection();
+                    } else if (alea(1, ant.mentalState.curiosityMax / 2) > ant.mentalState.curiosity) {
+                        console.log('curio', ant.mentalState.curiosity, ant.mentalState.curiosityMax)
+                        ant.changeDirection(1);
+                        ant.mentalState.curiosity = ant.mentalState.curiosityMax;
                     } else {
                         ant.forward();
+                        this.mentalState.curiosity -= 25;
                     }
 
                     return -1;

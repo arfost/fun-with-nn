@@ -60,12 +60,9 @@ export default class {
     }
 
     createNewAnt(nest) {
-        let ant = new Ant({
-            x: nest.pos.x,
-            y: nest.pos.y
-        }, nest);
-        this.pushToObjectList(ant);
-        nest.addAnt(ant);
+        if (nest.canCreateAnt) {
+            nest.createNewAnt(this);
+        }
     }
 
     createNewGravel(pos) {
