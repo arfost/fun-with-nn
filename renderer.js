@@ -46,7 +46,7 @@ function animate() {
 }
 
 animate();
-conTips = document.getElementById('contextualTips');
+var conTips = document.getElementById('contextualTips');
 document.getElementById('addGravel').addEventListener('click', e => {
     console.log("mod add gravel")
     addState = 'gravel'
@@ -71,7 +71,7 @@ document.getElementById('addAnt').addEventListener('click', e => {
     }
     conTips.innerHTML = "ant will spawn on last selected nest and be attached to it"
 });
-lastNest = false;
+var lastNest = false;
 // click handler to add random rects
 cv.addEventListener('click', e => {
     let rect = cv.getBoundingClientRect();
@@ -91,6 +91,8 @@ cv.addEventListener('click', e => {
             break;
     }
 });
+var lastObj;
+var lastInterval;
 cv.addEventListener('contextmenu', e => {
             e.preventDefault();
             //world.createNewGravel({ x: e.x, y: e.y });
@@ -98,15 +100,27 @@ cv.addEventListener('contextmenu', e => {
             let click = {
                 x: e.pageX,
                 y: e.pageY,
-                range: 10
+                range: 20
             };
             let objs = world.getNearbyObjects(click, false);
-            console.log(objs)
-            infoPanel.innerHTML = `${objs.map(obj => { return `<p>${obj.type}</p>${obj.formatedInfos.map(info => { return `<p>${info.key} : ${info.value}</p>` })}` })}`
-lastNest = objs.reduce((lastNest, obj) => {
-if (obj.type === 'nestEntrance') {
-lastNest = obj;
-}
-return lastNest
-}, false)
+            let obj = objs[0];
+            clearInterval(lastInterval)
+            if (lastObj === obj && objs.length > 1) {
+                obj = objs[1]
+            }
+            console.log(obj.formatedInfos)
+            infoPanel.innerHTML = `<div>${obj.type}</div>${obj.formatedInfos.map(info => { return `<div>${info.key} : ${info.value}</div>` })}`;
+    lastInterval = setInterval(function () {
+        let html = `<div>${obj.type}</div>${obj.formatedInfos.map(info => { let part = `<div>${info.key} : ${info.value}</div>`; console.log("formatted", part); return part })}`;
+        html = html.replace(/,/g, '');
+        console.log(html)
+                        infoPanel.innerHTML = html;
+            }, 1000);
+            lastObj = obj;
+            lastNest = objs.reduce((lastNest, obj) => {
+                if (obj.type === 'nestEntrance') {
+                    lastNest = obj;
+                }
+                return lastNest
+            }, false)
 });
