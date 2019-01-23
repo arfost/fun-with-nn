@@ -96,7 +96,7 @@ export class Ant extends Entity {
                     range: 5
                 }).filter(phero => phero.value === this.mentalState.pheromoneWanderValue);
                 if (pheros.length > 0) {
-                    pheros[0].strength += this.mentalState.pheromoneWanderStrength;
+                    pheros[0].addStrength(this.mentalState.pheromoneWanderStrength);
                 } else {
                     let pheromone = new Pheromone({ x: this.pos.x, y: this.pos.y }, this.mentalState.pheromoneWanderValue, this.mentalState.pheromoneWanderStrength);
                     world.pushToObjectList(pheromone);
@@ -109,7 +109,7 @@ export class Ant extends Entity {
                     range: 5
                 }).filter(phero => phero.value === this.mentalState.pheromoneFoodValue);
                 if (pheros.length > 0) {
-                    pheros[0].strength += this.mentalState.pheromoneFoodStrength;
+                    pheros[0].addStrength(this.mentalState.pheromoneFoodStrength);
                 } else {
                     let pheromone = new Pheromone({ x: this.pos.x, y: this.pos.y }, this.mentalState.pheromoneFoodValue, this.mentalState.pheromoneFoodStrength);
                     world.pushToObjectList(pheromone)
@@ -331,6 +331,9 @@ class Pheromone extends Entity {
             this.skinBase = false;
         }
         this.colorValue = `rgba(${this.value}, ${this.strength / this.maxStrength})`
+    }
+    addStrength(value) {
+        this.strength = (this.strength + value > this.maxStrength) ? this.strength + value : this.maxStrength;
     }
 
     get states() {
