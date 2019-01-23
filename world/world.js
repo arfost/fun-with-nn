@@ -7,6 +7,7 @@ export default class {
     constructor() {
         this.objectList = [];
         this.sortedObjects = {};
+        this.options = {};
     }
 
     get objects() {

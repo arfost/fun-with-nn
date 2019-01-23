@@ -65,9 +65,17 @@ document.getElementById('addNestEntrance').addEventListener('click', e => {
     conTips.innerHTML = "click anywhere to add nest on map"
 });
 
+
 document.getElementById('addAnt').addEventListener('click', e => {
     if (lastNest) {
         world.createNewAnt(lastNest);
+    }
+    conTips.innerHTML = "ant will spawn on last selected nest and be attached to it"
+});
+
+document.getElementById('togglePheromone').addEventListener('click', e => {
+    if (lastNest) {
+        world.options.pheromoneVisible = !world.options.pheromoneVisible;
     }
     conTips.innerHTML = "ant will spawn on last selected nest and be attached to it"
 });
@@ -95,32 +103,37 @@ var lastObj;
 var lastInterval;
 cv.addEventListener('contextmenu', e => {
             e.preventDefault();
-            //world.createNewGravel({ x: e.x, y: e.y });
-            let rect = cv.getBoundingClientRect();
             let click = {
                 x: e.pageX,
                 y: e.pageY,
                 range: 20
             };
             let objs = world.getNearbyObjects(click, false);
-            let obj = objs[0];
-            clearInterval(lastInterval)
-            if (lastObj === obj && objs.length > 1) {
-                obj = objs[1]
-            }
-            console.log(obj.formatedInfos)
-            infoPanel.innerHTML = `<div>${obj.type}</div>${obj.formatedInfos.map(info => { return `<div>${info.key} : ${info.value}</div>` })}`;
-    lastInterval = setInterval(function () {
-        let html = `<div>${obj.type}</div>${obj.formatedInfos.map(info => { let part = `<div>${info.key} : ${info.value}</div>`; console.log("formatted", part); return part })}`;
-        html = html.replace(/,/g, '');
-        console.log(html)
-                        infoPanel.innerHTML = html;
-            }, 1000);
-            lastObj = obj;
-            lastNest = objs.reduce((lastNest, obj) => {
-                if (obj.type === 'nestEntrance') {
-                    lastNest = obj;
+            if (objs.length > 0) {
+                let obj = objs[0];
+                clearInterval(lastInterval)
+                if (lastObj === obj && objs.length > 1) {
+                    obj = objs[1]
                 }
-                return lastNest
-            }, false)
+                let html = `<div>${obj.type}</div>${obj.formatedInfos.map(info => { return `<div>${info.key} : ${info.value}</div>` })}`;
+                    html = html.replace(/,/g, '');
+                    infoPanel.innerHTML = html;
+                lastInterval = setInterval(function () {
+                    let html = `<div>${obj.type}</div>${obj.formatedInfos.map(info => { return `<div>${info.key} : ${info.value}</div>` })}`;
+                    html = html.replace(/,/g, '');
+                    infoPanel.innerHTML = html;
+                }, 1000);
+                lastObj = obj;
+                lastNest = objs.reduce((lastNest, obj) => {
+                    if (obj.type === 'nestEntrance') {
+                        lastNest = obj;
+                    }
+                    return lastNest
+                }, false)
+            } else {
+                clearInterval(lastInterval);
+                lastObj = undefined;
+                infoPanel.innerHTML = "right click on something to see infos"
+            }
+            
 });

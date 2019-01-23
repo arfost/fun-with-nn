@@ -48,7 +48,7 @@ export class Entity {
     postRun() {}
 
     run(world) {
-        let newState = this.states[this.state].action(this, world);
+        let newState = this.states[this.state].action(world);
         this.state = newState !== -1 ? newState : this.state;
         this.postRun(world)
     }

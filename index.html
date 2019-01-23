@@ -7,25 +7,29 @@
     <style>
         .root {
             display: flex;
-            align-item: center;
         }
         
         .interface {
             display: flex;
-            align-item: center;
             flex-direction: column;
+            margin: 1em;
         }
         
         .buttons {
             display: flex;
             flex-direction: column;
-            align-item: center;
         }
         
         .infos {
             display: flex;
             flex-direction: column;
             align-item: center;
+            padding: 1em;
+        }
+        
+        .title-section {
+            margin: 0 auto;
+            font-size: 1.2em;
         }
     </style>
 </head>
@@ -36,17 +40,21 @@
         <div class=interface>
 
             <div class="buttons">
+                <div class="title-section">add element</div>
                 <button id="addGravel">add gravel</button>
                 <button id="addFood">add food</button>
                 <button id="addAnt">add ant</button>
                 <button id="addNestEntrance">add nest entrance</button>
+                <div class="title-section">world options</div>
+                <button id="togglePheromone">see/hide pheromones</button>
             </div>
             <div class="infos" id="infos">
-
+                right click on something to see infos
             </div>
             <div class="tips" id="tips">
+                <div class="title-section">Tips : </div>
                 <p id="contextualTips"></p>
-                <p>right click on element to select and see infos</p>
+                <p>very early version, by arfost</p>
             </div>
         </div>
     </div>

@@ -7,15 +7,18 @@ export class Ant extends Entity {
         super(pos);
         this.nest = nest;
         this.orientation = alea(0, 360);
+        this.foodCarried = 0;
         this.mentalState = {
             lastPheromoneMax: 10,
             perception: 10,
-            pheromoneWanderValue: 10,
-            pheromoneWanderStrength: 5000,
-            pheromoneFoodValue: 20,
+            pheromoneWanderValue: '0,0,255',
+            pheromoneWanderStrength: 2000,
+            pheromoneFoodValue: '255,0,0',
+            pheromoneFoodStrength: 1000,
+            pheromoneFoodTrigger: 100,
             energyMax: 2000,
-            resilience: 1500,
-            curiosityMax: 100,
+            resilience: 1300,
+            curiosityMax: 25,
             speed: 1
         }
         this.mentalState.energy = this.mentalState.energyMax;
@@ -35,7 +38,7 @@ export class Ant extends Entity {
         ]
     }
     get infos() {
-        return this.mentalState;
+        return Object.assign({}, this.mentalState, { "food-carried": this.foodCarried });
     }
 
     get type() {
@@ -80,6 +83,20 @@ export class Ant extends Entity {
         }
     }
 
+    takeFood(food) {
+        console.log('food carried before :', this.foodCarried, food.value)
+        this.foodCarried += food.removeFood(5);
+        console.log('food carried after :', this.foodCarried, food.value)
+    }
+
+    makePheromoneSum(pheromoneArray) {
+        return pheromoneArray.reduce((pheromoneSum, pheromone) => {
+            pheromoneSum[pheromone.value] = pheromoneSum[pheromone.value] ? pheromoneSum[pheromone.value] + pheromone.strength : pheromone.strength
+
+            return pheromoneSum;
+        }, {});
+    }
+
     rotate(matrix) {
         let result = [];
         for (let i = 0; i < matrix[0].length; i++) {
@@ -91,69 +108,152 @@ export class Ant extends Entity {
 
     postRun(world) {
         if (this.mentalState.energy < 0) {
-            world.replaceInObjectList(this, new Food(this.pos, 20));
+            world.replaceInObjectList(this, new Food(this.pos, { value: 20 + this.foodCarried, decayValue: 200 }));
         }
         this.mentalState.energy -= 1;
         this.mentalState.curiosity--;
-        console.log(this.mentalState.curiosity, this.mentalState.curiosityMax)
+        if (this.mentalState.curiosity < 0) {
+            this.mentalState.curiosity = this.mentalState.curiosityMax;
+        }
     }
 
     get states() {
         return [{
-                action: (ant, world) => {
+                action: (world) => {
 
-                    let frontOffSetPosition = ant.getFrontOffsetPerceptionPosition();
+                    let frontOffSetPosition = this.getFrontOffsetPerceptionPosition();
 
                     let isFront = world.getNearbyObjects(frontOffSetPosition);
                     if (isFront.filter(obj => obj.type === 'gravel').length > 0) {
-                        ant.changeDirection();
-                    } else if (alea(1, ant.mentalState.curiosityMax / 2) > ant.mentalState.curiosity) {
-                        console.log('curio', ant.mentalState.curiosity, ant.mentalState.curiosityMax)
-                        ant.changeDirection();
-                        ant.mentalState.curiosity = ant.mentalState.curiosityMax;
+
+                        var angleDeg = Math.atan2(isFront.filter(obj => obj.type === 'gravel')[0].pos.y - this.pos.y, isFront.filter(obj => obj.type === 'gravel')[0].pos.x - this.pos.x) * 180 / Math.PI;
+                        console.log("angle", angleDeg)
+                        this.changeDirection();
+                    } else if (isFront.filter(obj => obj.type === 'food').length > 0) {
+                        this.mentalState.curiosity = this.mentalState.curiosityMax;
+                        return 2;
+                    } else if (isFront.filter(obj => obj.type === 'pheromone').length > 0) {
+                        let pheromoneSum = this.makePheromoneSum(isFront.filter(obj => obj.type === 'pheromone'));
+                        if (pheromoneSum[this.mentalState.pheromoneFoodValue] > this.mentalState.pheromoneFoodTrigger) {
+                            this.mentalState.curiosity = this.mentalState.curiosityMax;
+                            return 2;
+                        } else {
+                            this.forward();
+                        }
+                    } else if (alea(1, this.mentalState.curiosityMax / 2) > this.mentalState.curiosity) {
+                        this.changeDirection();
+                        this.mentalState.curiosity = this.mentalState.curiosityMax;
                     } else {
-                        ant.forward();
+                        this.forward();
                         this.mentalState.curiosity--;
                     }
-                    ant.mentalState.lastPheromone--;
-                    if (ant.mentalState.lastPheromone < 0) {
-                        ant.mentalState.lastPheromone = ant.mentalState.lastPheromoneMax;
-                        ant.mentalState.energy -= 5;
-                        let pheromone = new Pheromone({ x: ant.pos.x, y: ant.pos.y }, ant.mentalState.pheromoneWanderValue, ant.mentalState.pheromoneWanderStrength);
+                    this.mentalState.lastPheromone--;
+                    if (this.mentalState.lastPheromone < 0) {
+                        this.mentalState.lastPheromone = this.mentalState.lastPheromoneMax;
+                        this.mentalState.energy -= 5;
+                        let pheromone = new Pheromone({ x: this.pos.x, y: this.pos.y }, this.mentalState.pheromoneWanderValue, this.mentalState.pheromoneWanderStrength);
                         world.pushToObjectList(pheromone)
                     }
 
-                    if (ant.mentalState.energy < ant.mentalState.resilience) {
+                    if (this.mentalState.energy < this.mentalState.resilience) {
+                        this.mentalState.curiosity = this.mentalState.curiosityMax;
                         return 1;
                     }
                     return -1;
                 }
             },
             {
-                foundTrail: false,
-                action: (ant, world) => {
-                    ant.colorValue = 'grey'
-                    let frontOffSetPosition = ant.getFrontOffsetPerceptionPosition();
+                action: (world) => {
+                    this.colorValue = 'grey'
+                    let frontOffSetPosition = this.getFrontOffsetPerceptionPosition();
 
                     let isFront = world.getNearbyObjects(frontOffSetPosition);
                     if (isFront.filter(obj => obj.type === 'gravel').length > 0) {
-                        ant.changeDirection();
+                        this.changeDirection();
                     } else if (isFront.filter(obj => obj.type === 'nestEntrance').length > 0) {
-                        isFront.filter(obj => obj.type === 'nestEntrance')[0].enter(ant, world);
+                        isFront.filter(obj => obj.type === 'nestEntrance')[0].enter(this, world);
                     } else if (isFront.filter(obj => obj.type === 'pheromone').length > 0) {
-                        this.foundTrail = true;
-                        ant.forward();
+                        let pheromoneSum = this.makePheromoneSum(isFront.filter(obj => obj.type === 'pheromone'));
+                        if (pheromoneSum[this.mentalState.pheromoneWanderValue] > 0) {
+                            this.foundTrail = true;
+                            this.searchTime = 0;
+                            this.forward();
+                        } else {
+                            this.changeDirection();
+                        }
                     } else if (this.foundTrail) {
-                        ant.changeDirection();
-                    } else if (alea(1, ant.mentalState.curiosityMax / 2) > ant.mentalState.curiosity) {
-                        console.log('curio', ant.mentalState.curiosity, ant.mentalState.curiosityMax)
-                        ant.changeDirection(1);
-                        ant.mentalState.curiosity = ant.mentalState.curiosityMax;
+                        this.searchTime++;
+                        if (this.searchTime < this.mentalState.curiosityMax * 10) {
+                            this.changeDirection();
+                        } else {
+                            this.foundTrail = false;
+                            this.searchTime = 0;
+                        }
+                    } else if (alea(1, this.mentalState.curiosityMax / 2) > this.mentalState.curiosity) {
+                        this.mentalState.curiosity = this.mentalState.curiosityMax;
+                        this.forward();
                     } else {
-                        ant.forward();
-                        this.mentalState.curiosity -= 25;
+                        this.changeDirection();
                     }
+                    return -1;
+                }
+            },
+            {
+                action: (world) => {
+                    this.colorValue = 'blue'
+                    let frontOffSetPosition = this.getFrontOffsetPerceptionPosition();
 
+                    let isFront = world.getNearbyObjects(frontOffSetPosition);
+                    if (isFront.filter(obj => obj.type === 'gravel').length > 0) {
+                        this.changeDirection();
+                    } else if (isFront.filter(obj => obj.type === 'nestEntrance').length > 0) {
+                        isFront.filter(obj => obj.type === 'nestEntrance')[0].enter(this, world);
+                    } else if (isFront.filter(obj => obj.type === 'food').length > 0 && this.foodCarried < 10) {
+                        this.takeFood(isFront.filter(obj => obj.type === 'food')[0])
+                        this.foundTrail = false;
+                        this.searchTime = 0;
+                    } else if (isFront.filter(obj => obj.type === 'pheromone').length > 0) {
+                        if (this.foodCarried < 10) {
+                            let pheromoneSum = this.makePheromoneSum(isFront.filter(obj => obj.type === 'pheromone'));
+                            if (pheromoneSum[this.mentalState.pheromoneFoodValue] > 0) {
+                                this.foundTrail = true;
+                                this.searchTime = 0;
+                                this.forward();
+                            } else {
+                                this.changeDirection();
+                            }
+                        } else {
+                            let pheromoneSum = this.makePheromoneSum(isFront.filter(obj => obj.type === 'pheromone'));
+                            if (pheromoneSum[this.mentalState.pheromoneWanderValue] > 0) {
+                                this.foundTrail = true;
+                                this.forward();
+                            } else {
+                                this.changeDirection();
+                            }
+                        }
+                    } else if (this.foundTrail) {
+                        this.searchTime++;
+                        if (this.searchTime < this.mentalState.curiosityMax * 10) {
+                            this.changeDirection();
+                        } else {
+                            this.foundTrail = false;
+                            this.searchTime = 0;
+                        }
+                    } else if (alea(1, this.mentalState.curiosityMax / 2) > this.mentalState.curiosity) {
+                        this.forward();
+                        this.mentalState.curiosity = this.mentalState.curiosityMax;
+                    } else {
+                        this.changeDirection();
+                    }
+                    if (this.foundTrail) {
+                        this.mentalState.lastPheromone--;
+                        if (this.mentalState.lastPheromone < 0) {
+                            this.mentalState.lastPheromone = this.mentalState.lastPheromoneMax;
+                            this.mentalState.energy -= 5;
+                            let pheromone = new Pheromone({ x: this.pos.x, y: this.pos.y }, this.mentalState.pheromoneFoodValue, this.mentalState.pheromoneFoodStrength);
+                            world.pushToObjectList(pheromone)
+                        }
+                    }
                     return -1;
                 }
             }
@@ -162,23 +262,24 @@ export class Ant extends Entity {
 }
 
 class Pheromone extends Entity {
-    constructor(pos, value, maxDecay) {
+    constructor(pos, value, strength) {
         super(pos);
         this.value = value;
-        this.decay = 0;
-        this.maxDecay = maxDecay;
-        this.colorValue = "rgba(255, 0, 0, 1)"
-        this.skinBase = [
+        this.strength = strength;
+        this.maxStrength = strength;
+        this.colorValue = `rgba(${this.value}, 1)`
+        this.skinBase = false
+        this.skinVisible = [
             [0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+            [1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
             [0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+            [1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
             [0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+            [1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
             [0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+            [1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
             [0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
-            [0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
-            [0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
-            [0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
-            [0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
-            [0, 1, 0, 1, 0, 1, 0, 1, 0, 1]
+            [1, 0, 1, 0, 1, 0, 1, 0, 1, 0]
         ]
     }
 
@@ -187,18 +288,29 @@ class Pheromone extends Entity {
     }
 
     postRun(world) {
-        if (this.decay > this.maxDecay) {
+        if (this.strength < 0) {
             world.removeFromObjectList(this);
         }
-        this.colorValue = `rgba(255, 0, 0, ${1-this.decay / this.maxDecay})`
+        if (world.options.pheromoneVisible) {
+            this.skinBase = this.skinVisible;
+        } else {
+            this.skinBase = false;
+        }
+        this.colorValue = `rgba(${this.value}, ${this.strength / this.maxStrength})`
     }
 
     get states() {
         return [{
-            action: (entity, world) => {
-                entity.decay++;
+            action: (world) => {
+                this.strength--;
                 return -1
             }
         }]
+    }
+
+    get infos() {
+        return {
+            "strength": `${this.strength} (${(this.strength / this.maxStrength )*100}%)`
+        }
     }
 }
