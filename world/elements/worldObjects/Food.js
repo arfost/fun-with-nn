@@ -4,7 +4,7 @@ import { alea } from '../../../helpers/vrac.js'
 export class Food extends Entity {
     constructor(pos, foodConfig = {
         value: 200,
-        decayValue: 100
+        decayValue: 200
     }) {
         super(pos);
         this.baseValue = foodConfig.value;

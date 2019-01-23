@@ -58,6 +58,19 @@ export default class {
         })
     }
 
+    getNearbyObjectsByType(type, pos, all = true) {
+
+        if (!this.sortedObjects[type]) {
+            return []
+        }
+        return this.sortedObjects[type].filter(object => {
+            let isOkx = object.pos.x > pos.x - pos.range && object.pos.x < pos.x + pos.range;
+            let isOky = object.pos.y > pos.y - pos.range && object.pos.y < pos.y + pos.range;
+            let isDrawable = object.drawDatas.skin;
+            return isOkx && isOky && (isDrawable || all)
+        })
+    }
+
     createNewNestEntrance(pos) {
         this.pushToObjectList(new NestEntrance(pos));
     }

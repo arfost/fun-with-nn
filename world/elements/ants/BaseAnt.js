@@ -14,11 +14,11 @@ export class Ant extends Entity {
             pheromoneWanderValue: '0,0,255',
             pheromoneWanderStrength: 2000,
             pheromoneFoodValue: '255,0,0',
-            pheromoneFoodStrength: 1000,
-            pheromoneFoodTrigger: 100,
+            pheromoneFoodStrength: 6000,
+            pheromoneFoodTrigger: 500,
             energyMax: 2000,
-            resilience: 1300,
-            curiosityMax: 25,
+            resilience: 1200,
+            curiosityMax: 500,
             speed: 1
         }
         this.mentalState.energy = this.mentalState.energyMax;
@@ -77,22 +77,56 @@ export class Ant extends Entity {
     }
 
     changeDirection(preferedDirection = alea(0, 1) ? -1 : 1, preferedStep = alea(1, 3)) {
+
+        //var angleDeg = Math.atan2(isFront.filter(obj => obj.type === 'gravel')[0].pos.y - this.pos.y, isFront.filter(obj => obj.type === 'gravel')[0].pos.x - this.pos.x) * 180 / Math.PI;
+        //console.log("angle", angleDeg);
         this.orientation += preferedDirection * 5 * preferedStep;
         if (this.orientation > 360) {
             this.orientation = 0;
         }
     }
 
+    putPheromone(type, world) {
+        let pheros;
+        switch (type) {
+            case 'wander':
+                pheros = world.getNearbyObjectsByType('pheromone', {
+                    x: this.pos.x,
+                    y: this.pos.y,
+                    range: 5
+                }).filter(phero => phero.value === this.mentalState.pheromoneWanderValue);
+                if (pheros.length > 0) {
+                    pheros[0].strength += this.mentalState.pheromoneWanderStrength;
+                } else {
+                    let pheromone = new Pheromone({ x: this.pos.x, y: this.pos.y }, this.mentalState.pheromoneWanderValue, this.mentalState.pheromoneWanderStrength);
+                    world.pushToObjectList(pheromone);
+                }
+                break;
+            case 'food':
+                pheros = world.getNearbyObjectsByType('pheromone', {
+                    x: this.pos.x,
+                    y: this.pos.y,
+                    range: 5
+                }).filter(phero => phero.value === this.mentalState.pheromoneFoodValue);
+                if (pheros.length > 0) {
+                    pheros[0].strength += this.mentalState.pheromoneFoodStrength;
+                } else {
+                    let pheromone = new Pheromone({ x: this.pos.x, y: this.pos.y }, this.mentalState.pheromoneFoodValue, this.mentalState.pheromoneFoodStrength);
+                    world.pushToObjectList(pheromone)
+                }
+
+                break;
+        }
+
+    }
+
     takeFood(food) {
-        console.log('food carried before :', this.foodCarried, food.value)
         this.foodCarried += food.removeFood(5);
-        console.log('food carried after :', this.foodCarried, food.value)
     }
 
     makePheromoneSum(pheromoneArray) {
         return pheromoneArray.reduce((pheromoneSum, pheromone) => {
             pheromoneSum[pheromone.value] = pheromoneSum[pheromone.value] ? pheromoneSum[pheromone.value] + pheromone.strength : pheromone.strength
-
             return pheromoneSum;
         }, {});
     }
@@ -125,9 +159,6 @@ export class Ant extends Entity {
 
                     let isFront = world.getNearbyObjects(frontOffSetPosition);
                     if (isFront.filter(obj => obj.type === 'gravel').length > 0) {
-
-                        var angleDeg = Math.atan2(isFront.filter(obj => obj.type === 'gravel')[0].pos.y - this.pos.y, isFront.filter(obj => obj.type === 'gravel')[0].pos.x - this.pos.x) * 180 / Math.PI;
-                        console.log("angle", angleDeg)
                         this.changeDirection();
                     } else if (isFront.filter(obj => obj.type === 'food').length > 0) {
                         this.mentalState.curiosity = this.mentalState.curiosityMax;
@@ -151,8 +182,7 @@ export class Ant extends Entity {
                     if (this.mentalState.lastPheromone < 0) {
                         this.mentalState.lastPheromone = this.mentalState.lastPheromoneMax;
                         this.mentalState.energy -= 5;
-                        let pheromone = new Pheromone({ x: this.pos.x, y: this.pos.y }, this.mentalState.pheromoneWanderValue, this.mentalState.pheromoneWanderStrength);
-                        world.pushToObjectList(pheromone)
+                        this.putPheromone('wander', world);
                     }
 
                     if (this.mentalState.energy < this.mentalState.resilience) {
@@ -206,14 +236,14 @@ export class Ant extends Entity {
                     let isFront = world.getNearbyObjects(frontOffSetPosition);
                     if (isFront.filter(obj => obj.type === 'gravel').length > 0) {
                         this.changeDirection();
-                    } else if (isFront.filter(obj => obj.type === 'nestEntrance').length > 0) {
+                    } else if (isFront.filter(obj => obj.type === 'nestEntrance').length > 0 && this.foodCarried >= 20) {
                         isFront.filter(obj => obj.type === 'nestEntrance')[0].enter(this, world);
-                    } else if (isFront.filter(obj => obj.type === 'food').length > 0 && this.foodCarried < 10) {
+                    } else if (isFront.filter(obj => obj.type === 'food').length > 0 && this.foodCarried < 20) {
                         this.takeFood(isFront.filter(obj => obj.type === 'food')[0])
                         this.foundTrail = false;
                         this.searchTime = 0;
                     } else if (isFront.filter(obj => obj.type === 'pheromone').length > 0) {
-                        if (this.foodCarried < 10) {
+                        if (this.foodCarried < 20) {
                             let pheromoneSum = this.makePheromoneSum(isFront.filter(obj => obj.type === 'pheromone'));
                             if (pheromoneSum[this.mentalState.pheromoneFoodValue] > 0) {
                                 this.foundTrail = true;
@@ -250,8 +280,12 @@ export class Ant extends Entity {
                         if (this.mentalState.lastPheromone < 0) {
                             this.mentalState.lastPheromone = this.mentalState.lastPheromoneMax;
                             this.mentalState.energy -= 5;
-                            let pheromone = new Pheromone({ x: this.pos.x, y: this.pos.y }, this.mentalState.pheromoneFoodValue, this.mentalState.pheromoneFoodStrength);
-                            world.pushToObjectList(pheromone)
+                            if (this.foodCarried >= 20) {
+                                this.putPheromone('food', world);
+                            } else {
+                                this.putPheromone('wander', world);
+                            }
+
                         }
                     }
                     return -1;
