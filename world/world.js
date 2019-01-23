@@ -14,9 +14,11 @@ export default class {
         return this.objectList
     }
 
-    get drawCritters() {
+    drawCritters(x, xMax, y, yMax) {
         return this.objectList.reduce((toDraw, object) => {
-            if (object.drawDatas.skin) {
+            let isOkx = object.pos.x > x && object.pos.x < xMax;
+            let isOky = object.pos.y > y && object.pos.y < yMax;
+            if (isOkx && isOky && object.drawDatas.skin) {
                 toDraw.push(object.drawDatas)
             }
             return toDraw;
@@ -49,7 +51,7 @@ export default class {
 
     getNearbyObjects(pos, all = true) {
         return this.objectList.filter(object => {
-            let isOkx = object.pos.x > pos.x - pos.range && object.pos.x < pos.x + pos.range
+            let isOkx = object.pos.x > pos.x - pos.range && object.pos.x < pos.x + pos.range;
             let isOky = object.pos.y > pos.y - pos.range && object.pos.y < pos.y + pos.range;
             let isDrawable = object.drawDatas.skin;
             return isOkx && isOky && (isDrawable || all)

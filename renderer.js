@@ -12,6 +12,8 @@ var cvWidth = cv.width;
 var cvHeight = cv.height;
 var infoPanel = document.getElementById('infos');
 var antsNumber = document.getElementById('ants');
+var mapX = 0;
+var mapY = 0;
 // animation : always running loop.
 
 function animate() {
@@ -21,10 +23,10 @@ function animate() {
         // clear canvas
     ctx.clearRect(0, 0, cvWidth, cvHeight);
     // draw everything
-    world.drawCritters.forEach(o => {
+    world.drawCritters(mapX, mapX + cvWidth, mapY, mapY + cvHeight).forEach(o => {
         ctx.fillStyle = o.color;
-        let offSetX = o.pos.x - 5 * o.size;
-        let offSetY = o.pos.y - 5 * o.size;
+        let offSetX = o.pos.x - 5 * o.size - mapX;
+        let offSetY = o.pos.y - 5 * o.size - mapY;
         var vx = Math.cos(o.orientation * Math.PI / 180); // create the vector along the image top
         var vy = Math.sin(o.orientation * Math.PI / 180);
         offSetX += -5 * vx + -5 * -vy; // add the rotated offset by mutliplying
@@ -84,8 +86,8 @@ var lastNest = false;
 cv.addEventListener('click', e => {
     let rect = cv.getBoundingClientRect();
     let click = {
-        x: e.pageX,
-        y: e.pageY
+        x: e.pageX + mapX,
+        y: e.pageY + mapY
     };
     switch (addState) {
         case 'gravel':
@@ -104,8 +106,8 @@ var lastInterval;
 cv.addEventListener('contextmenu', e => {
             e.preventDefault();
             let click = {
-                x: e.pageX,
-                y: e.pageY,
+                x: e.pageX + mapX,
+                y: e.pageY + mapY,
                 range: 20
             };
             let objs = world.getNearbyObjects(click, false);
@@ -137,3 +139,28 @@ cv.addEventListener('contextmenu', e => {
             }
             
 });
+
+document.onkeydown = checkKey;
+
+function checkKey(e) {
+
+    e = e || window.event;
+
+    if (e.keyCode == '38') {
+        console.log("up")
+        mapY -= 10;
+    }
+    else if (e.keyCode == '40') {
+        console.log("down")
+        mapY += 10;
+    }
+    else if (e.keyCode == '37') {
+        console.log("right")
+        mapX += 10;
+    }
+    else if (e.keyCode == '39') {
+        console.log("left")
+        mapX -= 10;
+    }
+
+}
