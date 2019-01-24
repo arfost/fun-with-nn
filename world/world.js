@@ -14,6 +14,9 @@ export default class {
         return this.objectList
     }
 
+    get totalObjectCount() {
+        return this.objectList.length
+    }
     drawCritters(x, xMax, y, yMax) {
         return this.objectList.reduce((toDraw, object) => {
             let isOkx = object.pos.x > x && object.pos.x < xMax;

@@ -16,14 +16,44 @@ var mapX = 0;
 var mapY = 0;
 // animation : always running loop.
 
+// Options
+const outputEl = document.getElementById('fps-output');
+const decimalPlaces = 2;
+const updateEachSecond = 1;
+
+// Cache values
+const decimalPlacesRatio = Math.pow(10, decimalPlaces);
+let timeMeasurements = [];
+let fps = 0;
+
 function animate() {
     // call again next time we can draw
     requestAnimationFrame(animate);
     world.runWorld()
         // clear canvas
     ctx.clearRect(0, 0, cvWidth, cvHeight);
+    //calc FPS
+    timeMeasurements.push(performance.now());
+
+    const msPassed = timeMeasurements[timeMeasurements.length - 1] - timeMeasurements[0];
+
+    if (msPassed >= updateEachSecond * 1000) {
+        fps = Math.round(timeMeasurements.length / msPassed * 1000 * decimalPlacesRatio) / decimalPlacesRatio;
+        timeMeasurements = [];
+    }
+    let toDrawList = world.drawCritters(mapX, mapX + cvWidth, mapY, mapY + cvHeight)
+    ctx.font = "10px Arial";
+    ctx.fillStyle = 'black'
+    ctx.fillText(`fps : ${fps}`, 10, 20);
+    ctx.fillText(`screen object count : ${toDrawList.length}`, 10, 32);
+    ctx.fillText(`total object count : ${world.totalObjectCount}`, 10, 44)
+    let linePos = 56;
+    for (let type in world.sortedObjects) {
+        ctx.fillText(`${type} object count : ${world.sortedObjects[type].length}`, 10, linePos)
+        linePos += 12;
+    }
     // draw everything
-    world.drawCritters(mapX, mapX + cvWidth, mapY, mapY + cvHeight).forEach(o => {
+    toDrawList.forEach(o => {
         ctx.fillStyle = o.color;
         let offSetX = o.pos.x - 5 * o.size - mapX;
         let offSetY = o.pos.y - 5 * o.size - mapY;
