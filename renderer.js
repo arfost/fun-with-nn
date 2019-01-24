@@ -128,6 +128,7 @@ cv.addEventListener('click', e => {
             break;
         case 'nestEntrance':
             world.createNewNestEntrance(click);
+            addState = undefined;
             break;
     }
 });
